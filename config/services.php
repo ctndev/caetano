@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'wppconnect' => [
+        'url' => env('WPPCONNECT_URL', 'http://localhost:3001'),
+        'secret' => env('WPPCONNECT_SECRET', ''),
+    ],
+
 ];

@@ -118,6 +118,13 @@ return [
             'replace_placeholders' => true,
         ],
 
+        'ai' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/ai-debug.log'),
+            'level' => 'debug',
+            'replace_placeholders' => true,
+        ],
+
         'null' => [
             'driver' => 'monolog',
             'handler' => NullHandler::class,

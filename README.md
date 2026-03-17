@@ -1,59 +1,264 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Caetano - Sistema de Vendas via WhatsApp
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Sistema de gerenciamento de vendas integrado com WhatsApp, utilizando inteligência artificial para processar pedidos via mensagens de texto e áudio.
 
-## About Laravel
+## Arquitetura
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+```
+WhatsApp User  →  WPPConnect (Node.js)  →  Laravel API  →  OpenAI GPT-4.1
+                                            ↓
+                                         SQLite DB
+                                            ↓
+                                      Livewire Dashboard
+```
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+**Backend:** Laravel 12, PHP 8.2+, SQLite
+**Frontend:** Livewire 3, Tailwind CSS 4, Alpine.js
+**AI:** Laravel AI SDK + OpenAI GPT-4.1
+**WhatsApp:** WPPConnect (Node.js) em `server-node/`
+**Áudio:** Transcrição via OpenAI Whisper (Laravel AI SDK)
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Requisitos
 
-## Learning Laravel
+- PHP 8.2+
+- Composer
+- Node.js 18+
+- npm
+- Chromium ou Google Chrome (para WPPConnect/Puppeteer)
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+## Instalação
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### 1. Laravel (Backend)
 
-## Laravel Sponsors
+```bash
+# Instalar dependências PHP
+composer install
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+# Copiar .env e gerar chave
+cp .env.example .env
+php artisan key:generate
 
-### Premium Partners
+# Rodar migrations
+php artisan migrate
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+# Instalar dependências front-end e compilar
+npm install
+npm run build
+```
 
-## Contributing
+### 2. Server Node (WhatsApp Bot)
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```bash
+cd server-node
 
-## Code of Conduct
+# Copiar .env
+cp .env.example .env
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+# Configurar variáveis (API_SECRET deve ser igual no Laravel e Node)
+# Editar .env com seu editor
 
-## Security Vulnerabilities
+# Instalar dependências
+npm install
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+### 3. Configurar variáveis de ambiente
 
-## License
+No `.env` do Laravel:
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+| Variável | Descrição |
+|----------|-----------|
+| `OPENAI_API_KEY` | Chave da API OpenAI |
+| `WPPCONNECT_URL` | URL do servidor Node (padrão: `http://localhost:3001`) |
+| `WPPCONNECT_SECRET` | Segredo compartilhado para autenticação API |
+
+No `.env` do server-node:
+
+| Variável | Descrição |
+|----------|-----------|
+| `PORT` | Porta do servidor (padrão: `3001`) |
+| `LARAVEL_API_URL` | URL da API Laravel (padrão: `http://localhost:8000/api`) |
+| `API_SECRET` | Mesmo segredo do `WPPCONNECT_SECRET` do Laravel |
+
+## Executando
+
+### Desenvolvimento
+
+```bash
+# Terminal 1 - Laravel
+composer dev
+
+# Terminal 2 - WhatsApp Bot
+cd server-node
+npm start
+```
+
+Na primeira execução do bot, um QR Code será exibido no terminal. Escaneie com o WhatsApp para conectar. A sessão é persistente (não precisa escanear novamente).
+
+### Produção
+
+Para o bot Node.js, use PM2:
+
+```bash
+npm install -g pm2
+cd server-node
+pm2 start src/index.js --name caetano-bot
+pm2 startup
+pm2 save
+```
+
+## Banco de Dados
+
+### Tabelas
+
+| Tabela | Descrição |
+|--------|-----------|
+| `users` | Usuários do sistema (admin) |
+| `clients` | Clientes cadastrados |
+| `orders` | Pedidos de venda |
+| `order_items` | Itens de cada pedido |
+| `allowed_numbers` | Números autorizados para interagir com o bot |
+| `messages` | Histórico de mensagens WhatsApp |
+
+### Status de Pedido
+
+- `pending` - Pendente
+- `paid` - Pago
+- `delivered` - Entregue
+- `cancelled` - Cancelado
+
+### Status de Pagamento
+
+- `pending` - Pendente
+- `paid` - Pago
+- `partial` - Parcial
+
+## API Endpoints
+
+Todos protegidos pelo header `X-Api-Secret`.
+
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| `POST` | `/api/whatsapp/message` | Receber mensagem do bot (texto ou áudio) |
+| `GET` | `/api/whatsapp/status` | Status da conexão WhatsApp |
+| `GET` | `/api/whatsapp/qrcode` | QR Code para conexão |
+
+### POST /api/whatsapp/message
+
+Corpo da requisição:
+
+```json
+{
+    "number": "5585999999999",
+    "message": "Vendi duas canecas para o João por 80 reais",
+    "type": "text"
+}
+```
+
+Para áudio, enviar como `multipart/form-data` com campo `audio` (arquivo).
+
+Resposta:
+
+```json
+{
+    "reply": "Pedido #1 criado! 2 canecas para João, total R$80,00. Qual o sobrenome do João?"
+}
+```
+
+## AI Agent - Ferramentas
+
+O agente `SalesAssistant` possui as seguintes ferramentas:
+
+| Ferramenta | Descrição |
+|------------|-----------|
+| `CreateOrder` | Cria pedido com cliente, itens, preços e data de entrega |
+| `UpdateOrder` | Atualiza status de pagamento, entrega e dados do pedido |
+| `QueryOrders` | Consulta pedidos (abertos, do mês, por cliente, etc.) |
+| `CreateClient` | Cria ou atualiza cliente |
+| `QueryClients` | Busca clientes cadastrados |
+
+### Exemplos de Uso via WhatsApp
+
+**Criar pedido:**
+> "Vendi duas canecas para o João por 80 reais. Uma com foto de coelho e outra com foto de gato. Para entregar até dia 30/03."
+
+**Atualizar pagamento:**
+> "João da Silva pagou as duas canecas, 80 reais, falta entregar."
+
+**Consultar vendas:**
+> "Quantas vendas estão em aberto?"
+> "Quantas vendas fiz este mês?"
+
+**Enviar áudio:**
+> Grave um áudio com o pedido e envie - o sistema transcreve e processa automaticamente.
+
+## Telas do Sistema
+
+- **Dashboard** - KPIs: pedidos abertos, vendas do mês, faturamento, total de clientes, status do bot
+- **Clientes** - CRUD completo com busca
+- **Pedidos** - CRUD com itens, filtro por status/pagamento
+- **Mensagens** - Histórico de mensagens com filtros
+- **Números Permitidos** - Gerenciar números autorizados
+- **Status do Bot** - Conexão WhatsApp, QR Code, métricas
+
+## Segurança
+
+- Autenticação obrigatória para todas as telas
+- API protegida por segredo compartilhado (`X-Api-Secret`)
+- Apenas números cadastrados em "Números Permitidos" podem interagir com o bot
+- CSRF protection em todas as rotas web
+- A IA nunca executa SQL diretamente - usa ferramentas (Tools) que executam queries via Eloquent
+- Validação de entrada em todos os formulários e endpoints
+- Header `X-Powered-By` desabilitado no Express
+- Senhas armazenadas com bcrypt (12 rounds)
+
+## Estrutura de Diretórios
+
+```
+caetano/
+├── app/
+│   ├── Ai/
+│   │   ├── Agents/SalesAssistant.php     # Agente IA principal
+│   │   └── Tools/                         # Ferramentas do agente
+│   ├── Http/
+│   │   ├── Controllers/Api/               # Controller da API WhatsApp
+│   │   └── Middleware/                     # Validação de segredo API
+│   ├── Livewire/                          # Componentes Livewire
+│   ├── Models/                            # Eloquent models
+│   └── Services/WppConnectService.php     # Comunicação com Node.js
+├── database/migrations/                   # Migrations do banco
+├── resources/views/
+│   ├── layouts/                           # Layouts (app + guest)
+│   └── livewire/                          # Views dos componentes
+├── routes/
+│   ├── web.php                            # Rotas web (Livewire)
+│   └── api.php                            # Rotas API (WhatsApp)
+├── server-node/                           # Bot WhatsApp (Node.js)
+│   └── src/
+│       ├── index.js                       # Entry point
+│       ├── services/whatsapp.js           # WPPConnect client
+│       ├── services/laravel.js            # HTTP client para Laravel
+│       ├── routes/                        # Rotas Express
+│       └── middleware/auth.js             # Autenticação API
+└── config/ai.php                          # Configuração AI SDK
+```
+
+## Troubleshooting
+
+**Bot não conecta:**
+- Verifique se o Node.js está rodando (`npm start` no `server-node/`)
+- Verifique se o Chromium está instalado
+- Verifique os logs do terminal
+
+**QR Code não aparece no dashboard:**
+- Confirme que `WPPCONNECT_URL` e `WPPCONNECT_SECRET` estão corretos
+- Verifique se o server-node está acessível na URL configurada
+
+**Mensagens não são processadas:**
+- Verifique se `OPENAI_API_KEY` está configurada
+- Verifique se o número está cadastrado em "Números Permitidos"
+- Verifique os logs do Laravel (`storage/logs/laravel.log`)
+
+**Áudio não funciona:**
+- O formato OGG do WhatsApp é suportado pela OpenAI
+- Verifique se o arquivo não excede 25MB
+- Verifique os logs para erros de transcrição
